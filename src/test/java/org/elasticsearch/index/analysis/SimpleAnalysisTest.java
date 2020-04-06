@@ -10,6 +10,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ko.util.DictionaryBuilder;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -27,6 +28,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.SuppressSysoutChecks(bugUrl = "")
 public class SimpleAnalysisTest extends LuceneTestCase  {
 	private static Logger logger = LoggerFactory.getLogger(SimpleAnalysisTest.class);
 
@@ -53,7 +55,21 @@ public class SimpleAnalysisTest extends LuceneTestCase  {
         	 logger.debug("TERM:{} / {} / {}~{} / {}", termAtt, typeAtt.type(), offsAtt.startOffset(), offsAtt.endOffset(), pos += pincAtt.getPositionIncrement());
          }
 		assertTrue(true);
-	}
+    }
+
+    @Test
+    public void createDictionaryTest () {
+        Path inputDir = null;
+        Path outputDir = null;
+        String encoding = "UTF-8";
+        boolean normalizeEntry = false;
+        try {
+            DictionaryBuilder.build(inputDir, outputDir, encoding, normalizeEntry);
+        } catch (IOException e) {
+            logger.error("", e);
+        }
+        assertTrue(true);
+    }
 	
     public Analyzer createTestAnalysis(Settings analysisSettings) throws IOException {
         InputStream dict = SimpleAnalysisTest.class.getResourceAsStream("user_dict.txt");
