@@ -1,0 +1,41 @@
+package com.danawa.search.analysis.plugin;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.danawa.search.analysis.index.ProductNameAnalyzerProvider;
+import com.danawa.search.analysis.index.ProductNameFilterFactory;
+import com.danawa.search.analysis.index.ProductNamePartOfSpeechStopFilterFactory;
+import com.danawa.search.analysis.index.ProductNameReadingFormFilterFactory;
+import com.danawa.search.analysis.index.ProductNameTokenizerFactory;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.elasticsearch.index.analysis.AnalyzerProvider;
+import org.elasticsearch.index.analysis.TokenFilterFactory;
+import org.elasticsearch.index.analysis.TokenizerFactory;
+import org.elasticsearch.indices.analysis.AnalysisModule.AnalysisProvider;
+import org.elasticsearch.plugins.AnalysisPlugin;
+import org.elasticsearch.plugins.Plugin;
+
+import static java.util.Collections.singletonMap;
+
+public class AnalysisProductNamePlugin extends Plugin implements AnalysisPlugin {
+    @Override
+    public Map<String, AnalysisProvider<TokenFilterFactory>> getTokenFilters() {
+        Map<String, AnalysisProvider<TokenFilterFactory>> extra = new HashMap<>();
+        extra.put("product_name_part_of_speech", ProductNamePartOfSpeechStopFilterFactory::new);
+        extra.put("product_name_readingform", ProductNameReadingFormFilterFactory::new);
+        extra.put("product_name_number", ProductNameFilterFactory::new);
+        return extra;
+    }
+
+    @Override
+    public Map<String, AnalysisProvider<TokenizerFactory>> getTokenizers() {
+        return singletonMap("product_name_tokenizer", ProductNameTokenizerFactory::new);
+    }
+
+    @Override
+    public Map<String, AnalysisProvider<AnalyzerProvider<? extends Analyzer>>> getAnalyzers() {
+        return singletonMap("product_name", ProductNameAnalyzerProvider::new);
+    }
+}

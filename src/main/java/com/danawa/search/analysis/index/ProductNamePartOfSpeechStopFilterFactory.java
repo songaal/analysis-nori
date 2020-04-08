@@ -1,4 +1,4 @@
-package com.danawa.search.analysis;
+package com.danawa.search.analysis.index;
 
 import java.util.HashSet;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.danawa.search.analysis;
+package com.danawa.search.analysis.index;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ko.KoreanNumberFilter;

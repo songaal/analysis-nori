@@ -1,4 +1,4 @@
-package com.danawa.search.analysis;
+package com.danawa.search.analysis.index;
 
 import java.util.List;
 import java.util.Set;
@@ -14,7 +14,7 @@ import org.elasticsearch.index.IndexSettings;
 import org.elasticsearch.index.analysis.AbstractIndexAnalyzerProvider;
 import org.elasticsearch.index.analysis.Analysis;
 
-import static com.danawa.search.analysis.ProductNamePartOfSpeechStopFilterFactory.resolvePOSList;
+import static com.danawa.search.analysis.index.ProductNamePartOfSpeechStopFilterFactory.resolvePOSList;
 
 public class ProductNameAnalyzerProvider extends AbstractIndexAnalyzerProvider<KoreanAnalyzer> {
     private final KoreanAnalyzer analyzer;

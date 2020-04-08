@@ -1,4 +1,4 @@
-package com.danawa.search.analysis;
+package com.danawa.search.analysis.index;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -47,7 +47,7 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
         try (Reader rulesReader = new StringReader(sb.toString())) {
             return UserDictionary.open(rulesReader);
         } catch (IOException e) {
-            throw new ElasticsearchException("failed to load nori user dictionary", e);
+            throw new ElasticsearchException("failed to load product-name user dictionary", e);
         }
     }
 
