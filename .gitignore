@@ -4,3 +4,4 @@
 .classpath
 .project
 .settings
+src/main/rawdata/mecab-ko-dic/matrix.def
