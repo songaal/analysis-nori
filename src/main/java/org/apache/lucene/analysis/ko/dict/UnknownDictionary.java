@@ -29,12 +29,20 @@ public final class UnknownDictionary extends BinaryDictionary {
     super();
   }
 
+  public UnknownDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+    super(resourceScheme, resourcePath);
+  }
+
   public CharacterDefinition getCharacterDefinition() {
     return characterDefinition;
   }
 
   public static UnknownDictionary getInstance() {
     return SingletonHolder.INSTANCE;
+  }
+
+  public static void changeInstance(UnknownDictionary instance) {
+    SingletonHolder.INSTANCE = instance;
   }
 
   @Override
@@ -48,8 +56,7 @@ public final class UnknownDictionary extends BinaryDictionary {
   }
 
   private static class SingletonHolder {
-    static final UnknownDictionary INSTANCE;
-
+    static UnknownDictionary INSTANCE;
     static {
       try {
         INSTANCE = new UnknownDictionary();
