@@ -7,3 +7,6 @@
 src/main/rawdata/mecab-ko-dic/matrix.def
 build
 bin
+test.sh
+.vscode
+.factorypath
