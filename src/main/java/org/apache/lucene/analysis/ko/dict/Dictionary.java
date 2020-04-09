@@ -80,4 +80,7 @@ public interface Dictionary {
    * Get the morphemes of specified word (e.g. 가깝으나: 가깝 + 으나).
    */
   Morpheme[] getMorphemes(int wordId, char[] surfaceForm, int off, int len);
+
+
+  public TokenInfoFST getFST();
 }

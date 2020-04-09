@@ -65,4 +65,9 @@ public final class UnknownDictionary extends BinaryDictionary {
       }
     }
   }
+
+  @Override
+  public TokenInfoFST getFST() {
+    return null;
+  }
 }

@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.ko.dict.Dictionary;
 import org.apache.lucene.analysis.ko.dict.TokenInfoDictionary;
 import org.apache.lucene.analysis.ko.dict.TokenInfoFST;
 import org.apache.lucene.analysis.ko.dict.UnknownDictionary;
-import org.apache.lucene.analysis.ko.dict.UserDictionary;
 import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.ko.tokenattributes.ReadingAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -116,7 +115,7 @@ public final class KoreanTokenizer extends Tokenizer {
   private final TokenInfoDictionary dictionary;
   private final UnknownDictionary unkDictionary;
   private final ConnectionCosts costs;
-  private final UserDictionary userDictionary;
+  private final Dictionary userDictionary;
   private final CharacterDefinition characterDefinition;
 
   private final FST.Arc<Long> arc = new FST.Arc<>();
@@ -171,7 +170,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param mode Decompound mode.
    * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
    */
-  public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
+  public KoreanTokenizer(AttributeFactory factory, Dictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
     this(factory, userDictionary, mode, outputUnknownUnigrams, true);
   }
 
@@ -184,7 +183,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    */
-  public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
+  public KoreanTokenizer(AttributeFactory factory, Dictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
     super(factory);
     this.mode = mode;
     this.discardPunctuation = discardPunctuation;

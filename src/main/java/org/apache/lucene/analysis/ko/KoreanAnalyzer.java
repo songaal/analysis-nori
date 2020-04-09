@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
-import org.apache.lucene.analysis.ko.dict.UserDictionary;
+import org.apache.lucene.analysis.ko.dict.Dictionary;
 
 import static org.apache.lucene.analysis.TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY;
 
@@ -35,7 +35,7 @@ import static org.apache.lucene.analysis.TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FAC
  * @since 7.4.0
  */
 public class KoreanAnalyzer extends Analyzer {
-  private final UserDictionary userDict;
+  private final Dictionary userDict;
   private final KoreanTokenizer.DecompoundMode mode;
   private final Set<POS.Tag> stopTags;
   private final boolean outputUnknownUnigrams;
@@ -55,7 +55,7 @@ public class KoreanAnalyzer extends Analyzer {
    * @param stopTags The set of part of speech that should be filtered.
    * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
    */
-  public KoreanAnalyzer(UserDictionary userDict, DecompoundMode mode, Set<POS.Tag> stopTags, boolean outputUnknownUnigrams) {
+  public KoreanAnalyzer(Dictionary userDict, DecompoundMode mode, Set<POS.Tag> stopTags, boolean outputUnknownUnigrams) {
     super();
     this.userDict = userDict;
     this.mode = mode;
