@@ -26,7 +26,7 @@ public class ProductNameAnalyzerProvider extends AbstractIndexAnalyzerProvider<P
         final UserDictionary userDictionary = ProductNameTokenizerFactory.getUserDictionary(env, settings);
         final List<String> tagList = Analysis.getWordList(env, settings, "stoptags");
         final Set<POS.Tag> stopTags = tagList != null ? resolvePOSList(tagList) : KoreanPartOfSpeechStopFilter.DEFAULT_STOP_TAGS;
-        analyzer = new ProductNameAnalyzer(userDictionary, mode, stopTags, false);
+        analyzer = new ProductNameAnalyzer(userDictionary, mode, stopTags, false, false);
     }
 
     @Override
