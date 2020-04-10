@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.ko.dict.TokenInfoFST;
 import org.apache.lucene.analysis.ko.dict.UnknownDictionary;
 import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.ko.tokenattributes.ReadingAttribute;
+import org.apache.lucene.analysis.ko.tokenattributes.TokenAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -151,7 +152,7 @@ public final class KoreanTokenizer extends Tokenizer {
   private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
   private final ReadingAttribute readingAtt = addAttribute(ReadingAttribute.class);
-
+  private final TokenAttribute tokenAtt = addAttribute(TokenAttribute.class);
 
   /**
    * Creates a new KoreanTokenizer with default parameters.
@@ -393,6 +394,7 @@ public final class KoreanTokenizer extends Tokenizer {
 
     final Token token = pending.remove(pending.size()-1);
 
+
     int length = token.getLength();
     clearAttributes();
     assert length > 0;
@@ -403,6 +405,7 @@ public final class KoreanTokenizer extends Tokenizer {
     readingAtt.setToken(token);
     posIncAtt.setPositionIncrement(token.getPositionIncrement());
     posLengthAtt.setPositionLength(token.getPositionLength());
+    tokenAtt.setToken(token);
     if (VERBOSE) {
       System.out.println(Thread.currentThread().getName() + ":    incToken: return token=" + token);
     }

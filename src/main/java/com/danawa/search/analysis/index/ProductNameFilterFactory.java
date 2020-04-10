@@ -1,7 +1,8 @@
 package com.danawa.search.analysis.index;
 
+import com.danawa.search.analysis.productname.ProductNameFilter;
+
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ko.KoreanNumberFilter;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.IndexSettings;
@@ -15,6 +16,6 @@ public class ProductNameFilterFactory extends AbstractTokenFilterFactory {
 
     @Override
     public TokenStream create(TokenStream tokenStream) {
-        return new KoreanNumberFilter(tokenStream);
+        return new ProductNameFilter(tokenStream);
     }
 }
