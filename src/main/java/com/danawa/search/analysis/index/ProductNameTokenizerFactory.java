@@ -8,6 +8,7 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ko.KoreanTokenizer;
+import org.apache.lucene.analysis.ko.dict.Dictionary;
 import org.apache.lucene.analysis.ko.dict.UserDictionary;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.settings.Settings;
@@ -20,7 +21,7 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
     private static final String USER_DICT_PATH_OPTION = "user_dictionary";
     private static final String USER_DICT_RULES_OPTION = "user_dictionary_rules";
 
-    private final UserDictionary userDictionary;
+    private final Dictionary userDictionary;
     private final KoreanTokenizer.DecompoundMode decompoundMode;
     private final boolean discardPunctuation;
 
@@ -31,11 +32,12 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
         discardPunctuation = settings.getAsBoolean("discard_punctuation", true);
     }
 
-    public static UserDictionary getUserDictionary(Environment env, Settings settings) {
+    public static Dictionary getUserDictionary(Environment env, Settings settings) {
         if (settings.get(USER_DICT_PATH_OPTION) != null && settings.get(USER_DICT_RULES_OPTION) != null) {
             throw new IllegalArgumentException("It is not allowed to use [" + USER_DICT_PATH_OPTION + "] in conjunction" +
                 " with [" + USER_DICT_RULES_OPTION + "]");
         }
+
         List<String> ruleList = Analysis.getWordList(env, settings, USER_DICT_PATH_OPTION, USER_DICT_RULES_OPTION, true);
         StringBuilder sb = new StringBuilder();
         if (ruleList == null || ruleList.isEmpty()) {
