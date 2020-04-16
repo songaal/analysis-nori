@@ -21,7 +21,7 @@ import com.danawa.fastcat.commons.io.OutputStreamDataOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomDictionary extends SourceDictionary<String> {
+public class CustomDictionary extends SourceDictionary<Object> {
 	private static Logger logger = LoggerFactory.getLogger(MapDictionary.class);
 	private Set<CharSequence> wordSet;
 	private Map<CharSequence, Object[]> map;
@@ -147,7 +147,7 @@ public class CustomDictionary extends SourceDictionary<String> {
 	}
 
 	@Override
-	public void addEntry(String keyword, Object[] values, List<String> columnSettingList) {
+	public void addEntry(String keyword, Object[] values, List<Object> columnSettingList) {
 		if (keyword == null) {
 			return;
 		}

@@ -4,10 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.dict.CharacterDefinition;
@@ -18,23 +19,32 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
-public class SimpleDictionary implements Dictionary {
-    private Set<CharSequence> wordSet;
+public class SystemDictionary implements Dictionary {
+    public static final int DEFAULT_WORD_COST = -100000;
+    public static final short DEFAULT_LEFT_ID = 1781;
+    public static final short DEFAULT_RIGHT_ID = 3533;
+    public static final short DEFAULT_RIGHT_ID_T = 3535;
+    public static final short DEFAULT_RIGHT_ID_F = 3534;
 
     // text -> wordID
-    private final TokenInfoFST fst;
+    private TokenInfoFST fst;
     private short leftId;
 
     // length, length... indexed by compound ID or null for simple noun
-    private final int segmentations[][];
-    private final short[] rightIds;
-    private final int[] workCosts;
+    private int segmentations[][];
+    private short[] rightIds;
+    private int[] workCosts;
 
-    public static SimpleDictionary open(int workCost, short leftId, short rightId, short rightIdT, short rightIdF, Reader reader) throws IOException {
+    private SystemDictionary() { }
+
+    public static SystemDictionary open(Reader reader) throws IOException {
+        return open(reader, DEFAULT_LEFT_ID, DEFAULT_RIGHT_ID, DEFAULT_RIGHT_ID_T, DEFAULT_RIGHT_ID_F);
+    }
+    public static SystemDictionary open(Reader reader, short leftId, short rightId, short rightIdT, short rightIdF) throws IOException {
 
         BufferedReader br = new BufferedReader(reader);
         String line = null;
-        List<String> entries = new ArrayList<>();
+        List<WordEntry> entries = new ArrayList<>();
 
         // text + optional segmentations
         while ((line = br.readLine()) != null) {
@@ -45,26 +55,28 @@ public class SimpleDictionary implements Dictionary {
             if (line.trim().length() == 0) {
                 continue;
             }
-            entries.add(line);
+            entries.add(new WordEntry(line, DEFAULT_WORD_COST));
         }
 
         if (entries.isEmpty()) {
             return null;
         } else {
-            return new SimpleDictionary(workCost, leftId, rightId, rightIdT, rightIdF, entries);
+            SystemDictionary dict = new SystemDictionary();
+            build(dict, entries, leftId, rightId, rightIdT, rightIdF);
+            return dict;
         }
     }
 
-    public SimpleDictionary(List<String> entries) throws IOException {
-        this(/*workCost*/-100000, /*leftId*/(short) 1781, /*rightId*/(short) 3533, /*rightIdT*/(short) 3535, /*rightIdF*/(short) 3534, entries);
+    public SystemDictionary(List<WordEntry> entries) throws IOException {
+        this();
+        build(this, entries, DEFAULT_LEFT_ID, DEFAULT_RIGHT_ID, DEFAULT_RIGHT_ID_T, DEFAULT_RIGHT_ID_F);
     }
 
-    public SimpleDictionary(int workCost, short leftId, short rightId, short rightIdT, short rightIdF, List<String> entries) throws IOException {
-        this.leftId = leftId;
+    public static void build(SystemDictionary dict, Collection<WordEntry> words, short leftId, short rightId, short rightIdT, short rightIdF) throws IOException {
+        dict.leftId = leftId;
         final CharacterDefinition charDef = CharacterDefinition.getInstance();
-        wordSet = new HashSet<>();
-        wordSet.addAll(entries);
-        entries.sort(Comparator.comparing(e -> e.split("\\s+")[0]));
+        Set<WordEntry> entries = new TreeSet<>(new WordEntryComparator());
+        entries.addAll(words);
 
         PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
         Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, fstOutput);
@@ -73,15 +85,16 @@ public class SimpleDictionary implements Dictionary {
         String lastToken = null;
         List<int[]> segmentations = new ArrayList<>(entries.size());
         List<Short> rightIds = new ArrayList<>(entries.size());
-        workCosts = new int[entries.size()];
+        dict.workCosts = new int[entries.size()];
         long ord = 0;
-        for (String entry : entries) {
-            String[] splits = entry.split("\\s+");
+        for (WordEntry entry : entries) {
+            String word = entry.word;
+            String[] splits = word.split("\\s+");
             String token = splits[0];
             if (token.equals(lastToken)) {
                 continue;
             }
-            char lastChar = entry.charAt(entry.length() - 1);
+            char lastChar = word.charAt(word.length() - 1);
             if (charDef.isHangul(lastChar)) {
                 if (charDef.hasCoda(lastChar)) {
                     rightIds.add(rightIdT);
@@ -116,14 +129,14 @@ public class SimpleDictionary implements Dictionary {
             }
             fstBuilder.add(scratch.get(), ord);
             lastToken = token;
+            dict.workCosts[(int) ord] = entry.cost;
             ord++;
         }
-        this.fst = new TokenInfoFST(fstBuilder.finish());
-        this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
-        this.rightIds = new short[rightIds.size()];
+        dict.fst = new TokenInfoFST(fstBuilder.finish());
+        dict.segmentations = segmentations.toArray(new int[segmentations.size()][]);
+        dict.rightIds = new short[rightIds.size()];
         for (int i = 0; i < rightIds.size(); i++) {
-            this.rightIds[i] = rightIds.get(i);
-            this.workCosts[i] = workCost;
+            dict.rightIds[i] = rightIds.get(i);
         }
     }
 
@@ -231,5 +244,41 @@ public class SimpleDictionary implements Dictionary {
             }
         }
         return false;
+    }
+
+    public static Set<WordEntry> appendEntry(String word, int cost, Set<WordEntry> entries) {
+        if (entries == null) {
+            entries = new TreeSet<>(new WordEntryComparator());
+        }
+        entries.add(new WordEntry(word, cost));
+        return entries;
+    }
+
+    public static Set<WordEntry> appendEntries(Collection<String> words, int cost, Set<WordEntry> entries) {
+        for (String w : words) {
+            entries = appendEntry(w, cost, entries);
+        }
+        return entries;
+    }
+
+    public static class WordEntry {
+        public String word;
+        public int cost;
+        public WordEntry(String word, int cost) { this.word = word; this.cost = cost; }
+        @Override public String toString() { return word; }
+    }
+
+    private static class WordEntryComparator implements Comparator<WordEntry> {
+        @Override public int compare(WordEntry e1, WordEntry e2) {
+            String s1 = e1.word;
+            String s2 = e2.word;
+            if (s1 != null) {
+                s1 = s1.split("\\s+")[0];
+            }
+            if (s2 != null) {
+                s2 = s2.split("\\s+")[0];
+            }
+            return s1.compareTo(s2);
+        }
     }
 }

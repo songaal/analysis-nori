@@ -18,8 +18,8 @@ import org.elasticsearch.index.analysis.AbstractTokenizerFactory;
 import org.elasticsearch.index.analysis.Analysis;
 
 public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
-    private static final String USER_DICT_PATH_OPTION = "user_dictionary";
-    private static final String USER_DICT_RULES_OPTION = "user_dictionary_rules";
+    public static final String USER_DICT_PATH_OPTION = "user_dictionary";
+    public static final String USER_DICT_RULES_OPTION = "user_dictionary_rules";
 
     private final Dictionary userDictionary;
     private final KoreanTokenizer.DecompoundMode decompoundMode;

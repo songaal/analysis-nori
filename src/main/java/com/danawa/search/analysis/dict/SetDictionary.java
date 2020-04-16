@@ -16,7 +16,7 @@ import com.danawa.fastcat.commons.io.DataOutput;
 import com.danawa.fastcat.commons.io.InputStreamDataInput;
 import com.danawa.fastcat.commons.io.OutputStreamDataOutput;
 
-public class SetDictionary extends SourceDictionary<String> {
+public class SetDictionary extends SourceDictionary<Object> {
 
 	private Set<CharSequence> set;
 
@@ -53,7 +53,7 @@ public class SetDictionary extends SourceDictionary<String> {
 	}
 
 	@Override
-	public void addEntry(String keyword, Object[] value, List<String> columnList) {
+	public void addEntry(String keyword, Object[] value, List<Object> columnList) {
 		keyword = keyword.trim();
 		if (keyword.length() > 0) {
 			CharSequence cv = new String(keyword).trim();

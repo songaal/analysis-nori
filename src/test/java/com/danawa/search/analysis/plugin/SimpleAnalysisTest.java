@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.danawa.search.analysis.dict.SystemDictionary;
 import com.danawa.search.analysis.productname.ProductNameAnalyzer;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -74,12 +75,12 @@ public class SimpleAnalysisTest {
 
     @Test
     public void simpleAnalyzerTest() throws Exception {
-        UserDictionary userDictionary = null;
+        SystemDictionary userDictionary = null;
         DecompoundMode decompoundMode = DecompoundMode.MIXED;
         Set<Tag> stopTags = null;
         {
             Reader reader = new StringReader(USER_DICT_STR);
-            userDictionary = UserDictionary.open(reader);
+            userDictionary = SystemDictionary.open(reader);
         }
         {
             stopTags = new HashSet<Tag>();

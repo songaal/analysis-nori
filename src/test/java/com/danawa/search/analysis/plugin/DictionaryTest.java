@@ -10,7 +10,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import com.danawa.search.analysis.dict.SimpleDictionary;
+import com.danawa.search.analysis.dict.SystemDictionary;
+import com.danawa.search.analysis.dict.SystemDictionary.WordEntry;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -28,9 +29,15 @@ public class DictionaryTest {
 
     @Test public void simpleDictionaryTest() throws Exception {
         logger.debug("START.");
-        List<String> entries = new ArrayList<>();
-        entries.addAll(Arrays.asList("세종,대왕,대한,민국".split("[,]")));
-        SimpleDictionary dict = new SimpleDictionary(entries);
+        List<WordEntry> entries = new ArrayList<>();
+        entries.addAll(Arrays.asList(
+            new WordEntry[] {
+                new WordEntry("세종", -100000),
+                new WordEntry("대왕", -100000),
+                new WordEntry("대한", -100000),
+                new WordEntry("민국", -100000),
+            }));
+        SystemDictionary dict = new SystemDictionary(entries);
         assertTrue(dict.contains("대왕"));
         assertTrue(dict.contains("세종"));
         assertTrue(dict.contains("민국"));
@@ -94,8 +101,8 @@ public class DictionaryTest {
         // 메모리도 약 2배 정도 더 사용한다
 
         BufferedReader reader = null;
-        List<String> wordList = new ArrayList<>();
-        SimpleDictionary dictSet = null;
+        List<WordEntry> wordList = new ArrayList<>();
+        SystemDictionary dictSet = null;
         int cntWord = 0;
         
         long freeMemory = Runtime.getRuntime().freeMemory();
@@ -103,9 +110,9 @@ public class DictionaryTest {
         try {
             reader = new BufferedReader(new FileReader(file));
             for (String ln; (ln = reader.readLine()) != null;) {
-                wordList.add(ln);
+                wordList.add(new WordEntry(ln, -100000));
             }
-            dictSet = new SimpleDictionary(wordList);
+            dictSet = new SystemDictionary(wordList);
             cntWord = wordList.size();
         } finally {
             try { reader.close(); } catch (Exception ignore) { }
@@ -131,7 +138,7 @@ public class DictionaryTest {
                 found = 0;
                 for (int inx = 0; inx < ntimes; inx++) {
                     if (Math.abs(r.nextInt()) % 2 == 0) {
-                        cv = wordList.get(Math.abs(r.nextInt()) % cntWord);
+                        cv = wordList.get(Math.abs(r.nextInt()) % cntWord).word;
                     } else {
                         String str = "";
                         int len = Math.abs(r.nextInt()) % 10 + 1;
