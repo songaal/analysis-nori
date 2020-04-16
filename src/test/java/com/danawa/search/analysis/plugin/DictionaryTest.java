@@ -42,7 +42,7 @@ public class DictionaryTest {
         File file = new File(userDictFile);
         // 빌드시 자동 테스트 수행을 막는다
         if (!"Y".equals(System.getProperty("PROP_TEST_PERFORMANCE")) || !file.exists()) {
-            return;
+            //return;
         }
         // CharVector - SetDictionary in fastcatsearch performance log
         // TOTAL 10000000 TIMES IN 670177400 NANOSECOND / SIZE:32641 / FOUND:5004093

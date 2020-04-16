@@ -16,7 +16,7 @@ import com.danawa.fastcat.commons.io.DataOutput;
 import com.danawa.fastcat.commons.io.InputStreamDataInput;
 import com.danawa.fastcat.commons.io.OutputStreamDataOutput;
 
-public class SetDictionary<T> extends SourceDictionary<T> {
+public class SetDictionary extends SourceDictionary<String> {
 
 	private Set<CharSequence> set;
 
@@ -53,7 +53,7 @@ public class SetDictionary<T> extends SourceDictionary<T> {
 	}
 
 	@Override
-	public void addEntry(String keyword, Object[] value, List<T> columnList) {
+	public void addEntry(String keyword, Object[] value, List<String> columnList) {
 		keyword = keyword.trim();
 		if (keyword.length() > 0) {
 			CharSequence cv = new String(keyword).trim();
@@ -110,7 +110,7 @@ public class SetDictionary<T> extends SourceDictionary<T> {
 	@Override
 	public void reload(Object object) throws IllegalArgumentException {
 		if (object != null && object instanceof SetDictionary) {
-			SetDictionary<?> setDictionary = (SetDictionary<?>) object;
+			SetDictionary setDictionary = (SetDictionary) object;
 			this.set = setDictionary.set();
 		} else {
 			throw new IllegalArgumentException("Reload dictionary argument error. argument = " + object);

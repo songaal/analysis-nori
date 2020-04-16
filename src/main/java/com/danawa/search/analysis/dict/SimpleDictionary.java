@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.dict.CharacterDefinition;
@@ -17,14 +19,16 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 public class SimpleDictionary implements Dictionary {
+    private Set<CharSequence> wordSet;
+
     // text -> wordID
     private final TokenInfoFST fst;
-    private int workCost;
     private short leftId;
 
     // length, length... indexed by compound ID or null for simple noun
     private final int segmentations[][];
     private final short[] rightIds;
+    private final int[] workCosts;
 
     public static SimpleDictionary open(int workCost, short leftId, short rightId, short rightIdT, short rightIdF, Reader reader) throws IOException {
 
@@ -56,9 +60,10 @@ public class SimpleDictionary implements Dictionary {
     }
 
     public SimpleDictionary(int workCost, short leftId, short rightId, short rightIdT, short rightIdF, List<String> entries) throws IOException {
-        this.workCost = workCost;
         this.leftId = leftId;
         final CharacterDefinition charDef = CharacterDefinition.getInstance();
+        wordSet = new HashSet<>();
+        wordSet.addAll(entries);
         entries.sort(Comparator.comparing(e -> e.split("\\s+")[0]));
 
         PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
@@ -68,6 +73,7 @@ public class SimpleDictionary implements Dictionary {
         String lastToken = null;
         List<int[]> segmentations = new ArrayList<>(entries.size());
         List<Short> rightIds = new ArrayList<>(entries.size());
+        workCosts = new int[entries.size()];
         long ord = 0;
         for (String entry : entries) {
             String[] splits = entry.split("\\s+");
@@ -117,6 +123,7 @@ public class SimpleDictionary implements Dictionary {
         this.rightIds = new short[rightIds.size()];
         for (int i = 0; i < rightIds.size(); i++) {
             this.rightIds[i] = rightIds.get(i);
+            this.workCosts[i] = workCost;
         }
     }
 
@@ -136,7 +143,7 @@ public class SimpleDictionary implements Dictionary {
 
     @Override
     public int getWordCost(int wordId) {
-        return workCost;
+        return workCosts[wordId];
     }
 
     @Override
