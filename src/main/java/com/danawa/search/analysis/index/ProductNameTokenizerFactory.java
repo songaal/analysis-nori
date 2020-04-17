@@ -137,8 +137,10 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
     }
 
     private static int getCost(TokenType tokenType) {
-        int ret = SystemDictionary.DEFAULT_WORD_COST_LOW;
-        if (tokenType == TokenType.HIGH) {
+        int ret = SystemDictionary.DEFAULT_WORD_COST_MIN;
+        if (tokenType == TokenType.MAX) {
+            ret = SystemDictionary.DEFAULT_WORD_COST_MAX;
+        } else if (tokenType == TokenType.HIGH) {
             ret = SystemDictionary.DEFAULT_WORD_COST_HIGH;
         } else if (tokenType == TokenType.MID) {
             ret = SystemDictionary.DEFAULT_WORD_COST_MID;

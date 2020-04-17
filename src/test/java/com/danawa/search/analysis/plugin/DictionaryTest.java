@@ -39,7 +39,7 @@ public class DictionaryTest {
 
         String[] words = { "대한", "민국", "세종", "대왕" };
         int[] costs = { SystemDictionary.DEFAULT_WORD_COST_HIGH, SystemDictionary.DEFAULT_WORD_COST_MID,
-                SystemDictionary.DEFAULT_WORD_COST_LOW, SystemDictionary.DEFAULT_WORD_COST_HIGH, };
+                SystemDictionary.DEFAULT_WORD_COST_MIN, SystemDictionary.DEFAULT_WORD_COST_HIGH, };
 
         entries.addAll(
                 Arrays.asList(new WordEntry[] { new WordEntry(words[0], costs[0]), new WordEntry(words[1], costs[1]),
@@ -60,10 +60,10 @@ public class DictionaryTest {
 
     @Test
     public void performanceTest() throws Exception {
-        String userDictFile = "C:/Temp/dict_user.txt";
+        String userDictFile = System.getProperty("PROP_TEST_USER_DICT_TXT");
         File file = new File(userDictFile);
         // 빌드시 자동 테스트 수행을 막는다
-        if (!"Y".equals(System.getProperty("PROP_TEST_PERFORMANCE")) || !file.exists()) {
+        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !file.exists()) {
             return;
         }
         // CharVector - SetDictionary in fastcatsearch performance log

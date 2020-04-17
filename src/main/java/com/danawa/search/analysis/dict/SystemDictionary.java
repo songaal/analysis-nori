@@ -26,12 +26,13 @@ public class SystemDictionary implements Dictionary {
     }
 
     public static enum TokenType {
-        HIGH, MID, LOW
+        MAX, HIGH, MID, MIN
     }
 
-    public static final int DEFAULT_WORD_COST_HIGH  = -400000;
+    public static final int DEFAULT_WORD_COST_MAX   = -400000;
+    public static final int DEFAULT_WORD_COST_HIGH  = -300000;
     public static final int DEFAULT_WORD_COST_MID   = -200000;
-    public static final int DEFAULT_WORD_COST_LOW   = -100000;
+    public static final int DEFAULT_WORD_COST_MIN   = -100000;
     public static final short DEFAULT_LEFT_ID       = 1781;
     public static final short DEFAULT_RIGHT_ID      = 3533;
     public static final short DEFAULT_RIGHT_ID_T    = 3535;

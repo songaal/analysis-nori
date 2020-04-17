@@ -156,10 +156,14 @@ public class SimpleAnalysisTest {
     @Test
     public void testDictionaryLoadedTokenizer() throws Exception {
         Properties prop = new Properties(0);
+        File propFile = new File(System.getProperty("PROP_TEST_DICTIONARY_SETTING"));
+        // 빌드시 자동 테스트 수행을 막는다
+        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !propFile.exists()) {
+            return;
+        }
         {
             Reader reader = null;
             try {
-                File propFile = new File("C:/Users/admin/Documents/workspace/TEST_HOME/elasticsearch-7.6.2/config/product_name_analysis.prop");
                 reader = new FileReader(propFile);
                 prop.load(reader);
             } finally {
