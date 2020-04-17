@@ -1,9 +1,12 @@
 package com.danawa.search.analysis.dict;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import com.danawa.search.analysis.dict.SystemDictionary.WordEntry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,17 +56,22 @@ public class CommonDictionary {
 		return dictionaryMap.put(dictionaryId, dictionary);
 	}
 
-	public void appendDictionary(Set<CharSequence> keySet, String tokenType) {
-		//systemDictionary.appendAdditionalNounEntry(keySet, tokenType);
+	public Set<WordEntry> appendDictionary(Set<CharSequence> keySet, int cost, Set<WordEntry> entries) {
+		// int cost = SystemDictionary.DEFAULT_WORD_COST_MID;
+		// if (SystemDictionary.COST_HIGH.equals(tokenType)) {
+		// 	cost = SystemDictionary.DEFAULT_WORD_COST_HIGH;
+		// } else if (SystemDictionary.COST_LOW.equals(tokenType)) {
+		// 	cost = SystemDictionary.DEFAULT_WORD_COST_LOW;
+		// }
+		return SystemDictionary.appendEntries(keySet, cost, entries);
 	}
 
-	public void applyDictionary() {
-
+	public void applyDictionary(Set<WordEntry> entries) throws IOException {
+		SystemDictionary.build(systemDictionary, entries);
 	}
 	
 	@Override
 	public String toString() {
-		// return getClass().getSimpleName() + "] createTime=" + createTime + ", entry = " + (systemDictionary != null ? systemDictionary.size() : 0) + ", dictionaries = "+dictionaryMap.size(); 
 		return getClass().getSimpleName() + "] createTime=" + createTime + ", dictionaries = " + dictionaryMap.size();
 	}
 }

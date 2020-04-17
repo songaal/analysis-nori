@@ -20,11 +20,22 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 public class SystemDictionary implements Dictionary {
-    public static final int DEFAULT_WORD_COST = -100000;
-    public static final short DEFAULT_LEFT_ID = 1781;
-    public static final short DEFAULT_RIGHT_ID = 3533;
-    public static final short DEFAULT_RIGHT_ID_T = 3535;
-    public static final short DEFAULT_RIGHT_ID_F = 3534;
+
+    public static enum Type {
+        SYSTEM, SET, MAP, SYNONYM, SYNONYM_2WAY, SPACE, CUSTOM, INVERT_MAP, COMPOUND
+    }
+
+    public static enum TokenType {
+        HIGH, MID, LOW
+    }
+
+    public static final int DEFAULT_WORD_COST_HIGH  = -400000;
+    public static final int DEFAULT_WORD_COST_MID   = -200000;
+    public static final int DEFAULT_WORD_COST_LOW   = -100000;
+    public static final short DEFAULT_LEFT_ID       = 1781;
+    public static final short DEFAULT_RIGHT_ID      = 3533;
+    public static final short DEFAULT_RIGHT_ID_T    = 3535;
+    public static final short DEFAULT_RIGHT_ID_F    = 3534;
 
     // text -> wordID
     private TokenInfoFST fst;
@@ -35,13 +46,13 @@ public class SystemDictionary implements Dictionary {
     private short[] rightIds;
     private int[] workCosts;
 
-    private SystemDictionary() { }
+    public SystemDictionary() { }
 
     public static SystemDictionary open(Reader reader) throws IOException {
         return open(reader, DEFAULT_LEFT_ID, DEFAULT_RIGHT_ID, DEFAULT_RIGHT_ID_T, DEFAULT_RIGHT_ID_F);
     }
-    public static SystemDictionary open(Reader reader, short leftId, short rightId, short rightIdT, short rightIdF) throws IOException {
 
+    public static SystemDictionary open(Reader reader, short leftId, short rightId, short rightIdT, short rightIdF) throws IOException {
         BufferedReader br = new BufferedReader(reader);
         String line = null;
         List<WordEntry> entries = new ArrayList<>();
@@ -55,7 +66,7 @@ public class SystemDictionary implements Dictionary {
             if (line.trim().length() == 0) {
                 continue;
             }
-            entries.add(new WordEntry(line, DEFAULT_WORD_COST));
+            entries.add(new WordEntry(line, DEFAULT_WORD_COST_MID));
         }
 
         if (entries.isEmpty()) {
@@ -69,7 +80,11 @@ public class SystemDictionary implements Dictionary {
 
     public SystemDictionary(List<WordEntry> entries) throws IOException {
         this();
-        build(this, entries, DEFAULT_LEFT_ID, DEFAULT_RIGHT_ID, DEFAULT_RIGHT_ID_T, DEFAULT_RIGHT_ID_F);
+        build(this, entries);
+    }
+
+    public static void build(SystemDictionary dict, Collection<WordEntry> entries) throws IOException {
+        build(dict, entries, DEFAULT_LEFT_ID, DEFAULT_RIGHT_ID, DEFAULT_RIGHT_ID_T, DEFAULT_RIGHT_ID_F);
     }
 
     public static void build(SystemDictionary dict, Collection<WordEntry> words, short leftId, short rightId, short rightIdT, short rightIdF) throws IOException {
@@ -88,7 +103,7 @@ public class SystemDictionary implements Dictionary {
         dict.workCosts = new int[entries.size()];
         long ord = 0;
         for (WordEntry entry : entries) {
-            String word = entry.word;
+            String word = String.valueOf(entry.word);
             String[] splits = word.split("\\s+");
             String token = splits[0];
             if (token.equals(lastToken)) {
@@ -230,23 +245,27 @@ public class SystemDictionary implements Dictionary {
         return result;
     }
 
-    public boolean contains(CharSequence chars) throws IOException {
+    public int contains(CharSequence chars) throws IOException {
+        int ret = -1;
         final FST.BytesReader fstReader = fst.getBytesReader();
         FST.Arc<Long> arc = new FST.Arc<>();
         arc = fst.getFirstArc(arc);
+        int output = 0;
         for (int inx = 0; inx < chars.length(); inx++) {
             int ch = chars.charAt(inx);
             if (fst.findTargetArc(ch, arc, arc, inx == 0, fstReader) == null) {
                 break;
             }
+            output += arc.output().intValue();
             if (arc.isFinal()) {
-                return true;
+                ret = output + arc.nextFinalOutput().intValue();
+                return ret;
             }
         }
-        return false;
+        return ret;
     }
 
-    public static Set<WordEntry> appendEntry(String word, int cost, Set<WordEntry> entries) {
+    public static Set<WordEntry> appendEntry(CharSequence word, int cost, Set<WordEntry> entries) {
         if (entries == null) {
             entries = new TreeSet<>(new WordEntryComparator());
         }
@@ -254,29 +273,45 @@ public class SystemDictionary implements Dictionary {
         return entries;
     }
 
-    public static Set<WordEntry> appendEntries(Collection<String> words, int cost, Set<WordEntry> entries) {
-        for (String w : words) {
+    public static Set<WordEntry> appendEntries(Collection<CharSequence> words, int cost, Set<WordEntry> entries) {
+        for (CharSequence w : words) {
             entries = appendEntry(w, cost, entries);
         }
         return entries;
     }
 
     public static class WordEntry {
-        public String word;
+        public CharSequence word;
         public int cost;
-        public WordEntry(String word, int cost) { this.word = word; this.cost = cost; }
-        @Override public String toString() { return word; }
+        public WordEntry(CharSequence word, int cost) { this.word = word; this.cost = cost; }
+        @Override public String toString() { 
+            if (word != null) { return String.valueOf(word); }
+            return null;
+        }
     }
 
     private static class WordEntryComparator implements Comparator<WordEntry> {
         @Override public int compare(WordEntry e1, WordEntry e2) {
-            String s1 = e1.word;
-            String s2 = e2.word;
-            if (s1 != null) {
-                s1 = s1.split("\\s+")[0];
+            CharSequence c1 = e1.word;
+            CharSequence c2 = e2.word;
+            String s1 = null;
+            String s2 = null;
+            if (c1 != null) {
+                s1 = String.valueOf(c1).split("\\s+")[0];
+            } else {
+                if (c2 == null) {
+                    // 둘 다 Null
+                    return 0;
+                } else {
+                    // 선단어가 Null
+                    return -1;
+                }
             }
-            if (s2 != null) {
-                s2 = s2.split("\\s+")[0];
+            if (c2 != null) {
+                s2 = String.valueOf(c2).split("\\s+")[0];
+            } else {
+                // 후단어가 Null
+                return 1;
             }
             return s1.compareTo(s2);
         }

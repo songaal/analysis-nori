@@ -30,18 +30,34 @@ public class DictionaryTest {
     @Test public void simpleDictionaryTest() throws Exception {
         logger.debug("START.");
         List<WordEntry> entries = new ArrayList<>();
+
+        String[] words = { "대한", "민국", "세종", "대왕" };
+        int [] costs = {
+            SystemDictionary.DEFAULT_WORD_COST_HIGH,
+            SystemDictionary.DEFAULT_WORD_COST_MID,
+            SystemDictionary.DEFAULT_WORD_COST_LOW,
+            SystemDictionary.DEFAULT_WORD_COST_HIGH,
+        };
+
         entries.addAll(Arrays.asList(
             new WordEntry[] {
-                new WordEntry("세종", -100000),
-                new WordEntry("대왕", -100000),
-                new WordEntry("대한", -100000),
-                new WordEntry("민국", -100000),
-            }));
+                new WordEntry(words[0], costs[0]),
+                new WordEntry(words[1], costs[1]),
+                new WordEntry(words[2], costs[2]),
+                new WordEntry(words[3], costs[3]) 
+        }));
+
         SystemDictionary dict = new SystemDictionary(entries);
-        assertTrue(dict.contains("대왕"));
-        assertTrue(dict.contains("세종"));
-        assertTrue(dict.contains("민국"));
-        assertTrue(!dict.contains("미국"));
+        assertTrue(dict.contains("대왕") != -1);
+        assertTrue(dict.contains("세종") != -1);
+        assertTrue(dict.contains("민국") != -1);
+        assertTrue(dict.contains("미국") == -1);
+
+        for (int inx = 0; inx < words.length; inx++) {
+            String word = words[inx];
+            int wordId = dict.contains(word);
+            assertEquals(costs[inx], dict.getWordCost(wordId));
+        }
     }
     
     @Test public void performanceTest() throws Exception {
@@ -49,7 +65,7 @@ public class DictionaryTest {
         File file = new File(userDictFile);
         // 빌드시 자동 테스트 수행을 막는다
         if (!"Y".equals(System.getProperty("PROP_TEST_PERFORMANCE")) || !file.exists()) {
-            //return;
+            return;
         }
         // CharVector - SetDictionary in fastcatsearch performance log
         // TOTAL 10000000 TIMES IN 670177400 NANOSECOND / SIZE:32641 / FOUND:5004093
@@ -130,7 +146,7 @@ public class DictionaryTest {
 		
 		int chStart = '가';
         int chLimit = '힣' - chStart;
-        String cv = null;
+        CharSequence cv = null;
         
         try {
             for (int test = 0; test < tries; test++) {
@@ -149,7 +165,7 @@ public class DictionaryTest {
                     }
 
                     timePrev = System.nanoTime();
-                    boolean contains = dictSet.contains(cv);
+                    boolean contains = (dictSet.contains(cv) != -1);
                     timeNext = System.nanoTime();
                     timeTotal += (timeNext - timePrev);
 
