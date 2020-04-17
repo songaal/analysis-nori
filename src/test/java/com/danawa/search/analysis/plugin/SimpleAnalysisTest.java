@@ -1,16 +1,16 @@
 package com.danawa.search.analysis.plugin;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.FileReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.Writer;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
+import com.danawa.search.analysis.dict.CommonDictionary;
 import com.danawa.search.analysis.dict.SystemDictionary;
+import com.danawa.search.analysis.index.ProductNameTokenizerFactory;
 import com.danawa.search.analysis.productname.ProductNameAnalyzer;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -21,9 +21,9 @@ import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.Token;
 import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
 import org.apache.lucene.analysis.ko.POS.Tag;
+import org.apache.lucene.analysis.ko.dict.Dictionary;
 import org.apache.lucene.analysis.ko.dict.UserDictionary;
 import org.apache.lucene.analysis.ko.tokenattributes.TokenAttribute;
-import org.apache.lucene.analysis.ko.util.DictionaryBuilder;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -154,74 +154,86 @@ public class SimpleAnalysisTest {
     }
 
     @Test
-    public void createDictionaryTest() {
-        String encoding = "UTF-8";
-        boolean normalizeEntry = true;
-        File inputDir = null;
-        File outputDir = null;
-        Writer writer = null;
-        FileFilter deleteFilter = new DeleteFileFilter();
+    public void testDictionaryLoadedTokenizer() throws Exception {
+        Properties prop = new Properties(0);
+        {
+            Reader reader = null;
+            try {
+                File propFile = new File("C:/Users/admin/Documents/workspace/TEST_HOME/elasticsearch-7.6.2/config/product_name_analysis.prop");
+                reader = new FileReader(propFile);
+                prop.load(reader);
+            } finally {
+                try { reader.close(); } catch (Exception ignore) { }
+            }
+        }
+        CommonDictionary commonDictionary = ProductNameTokenizerFactory.loadDictionary(null, prop);
+        SystemDictionary userDictionary = commonDictionary.getSystemDictionary();
+        DecompoundMode decompoundMode = DecompoundMode.MIXED;
+        Set<Tag> stopTags = null;
+        {
+            stopTags = new HashSet<Tag>();
+            for (String tagStr : STOP_TAG_STR.split("[,]")) {
+                stopTags.add(POS.resolveTag(tagStr));
+            }
+            if (stopTags.size() == 0) {
+                stopTags = null;
+            }
+        }
+        Analyzer analyzer = null;
+        TokenStream stream = null;
         try {
-            inputDir = createTmpDir();
-            outputDir = createTmpDir();
-            writer = new FileWriter(new File(inputDir, "noun.csv"));
-            writer.write("한국어,0,0,0,NNG,,,,*,*,*,0");
-            writer.close();
+            String text = TEXT_STR;
+            ////////////////////////////////////////////////////////////////////////////////
+            //decompoundMode = DecompoundMode.NONE;
+            //text = "상품명분석기1234abcd12ab34cd테스트중입니다";
+            ////////////////////////////////////////////////////////////////////////////////
+            Reader input = new StringReader(text);
+            analyzer = new ProductNameAnalyzer(userDictionary, decompoundMode, stopTags, false, false);
+            stream = analyzer.tokenStream("", input);
+            stream.reset();
+            stream.clearAttributes();
+            int pos = 0;
+            CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+            PositionIncrementAttribute pincAtt = stream.addAttribute(PositionIncrementAttribute.class);
+            OffsetAttribute offsAtt = stream.addAttribute(OffsetAttribute.class);
+            TokenAttribute tokenAtt = stream.addAttribute(TokenAttribute.class);
 
-            writer = new FileWriter(new File(inputDir, "unk.def"));
-            writer.write("DEFAULT,1801,3566,3640,SY,*,*,*,*,*,*,*");
-            writer.close();
+            Object[] types = { 
+                POS.Tag.NNB, POS.Tag.NNBC, POS.Tag.NNG, POS.Tag.NNP,
+                POS.Tag.VA, POS.Tag.VV, POS.Tag.VX,
+                POS.Tag.SN, POS.Tag.SL
+            };
 
-            writer = new FileWriter(new File(inputDir, "char.def"));
-            writer.write("0x0041..0x005A ALPHA");
-            writer.close();
+            while (stream.incrementToken()) {
+                Object type = null;
+                Token token = tokenAtt.getToken();
+                type = token.getLeftPOS();
 
-            writer = new FileWriter(new File(inputDir, "matrix.def"));
-            writer.write("1 1\n0 0 0");
-            writer.close();
+                boolean visible = false;
 
-            DictionaryBuilder.build(inputDir.toPath(), outputDir.toPath(), encoding, normalizeEntry);
-        } catch (IOException e) {
+                if (isIn(type, types)) {
+                    visible = true;
+                }
+
+                if (visible) {
+                    logger.debug("TERM:{} / {} / {}~{} / {}", termAtt, type, offsAtt.startOffset(),
+                            offsAtt.endOffset(), pos += pincAtt.getPositionIncrement());
+                } else {
+                    logger.debug("TERM:{} / {}", termAtt, type);
+                }
+            }
+        } catch (Exception e) {
             logger.error("", e);
         } finally {
-            try { writer.close(); } catch (Exception ignore) { }
-            try { deleteDir(inputDir, deleteFilter); } catch (Exception ignore) { }
-            try { deleteDir(outputDir, deleteFilter); } catch (Exception ignore) { }
+            stream.close();
+            analyzer.close();
         }
         assertTrue(true);
     }
 
-    public Tokenizer createTokenizer(
-        UserDictionary userDictionary,
-        DecompoundMode decompoundMode,
+    public Tokenizer createTokenizer(Dictionary userDictionary, DecompoundMode decompoundMode,
         boolean discardPunctuation) {
-		return new KoreanTokenizer(KoreanTokenizer.DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary,
-            decompoundMode, true, discardPunctuation);
-    }
-
-    public static File createTmpDir() throws IOException {
-        File file = File.createTempFile("tmp_", "_dir");
-        file.delete();
-        file.mkdir();
-        return file;
-    }
-
-    public static class DeleteFileFilter implements FileFilter {
-        @Override public boolean accept(File file) {
-            if (file.isDirectory()) {
-                file.listFiles(this);
-            }
-            file.delete();
-            return false;
-        }
-    }
-
-    public static void deleteDir(File file, FileFilter filter) throws IOException {
-        if (file.exists()) {
-            if (file.isDirectory()) {
-                file.listFiles(filter);
-            }
-            file.delete();
-        }
+        return new KoreanTokenizer(KoreanTokenizer.DEFAULT_TOKEN_ATTRIBUTE_FACTORY,
+            userDictionary, decompoundMode, true, discardPunctuation);
     }
 }

@@ -4,7 +4,11 @@ import static org.junit.Assert.*;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +17,7 @@ import java.util.Random;
 import com.danawa.search.analysis.dict.SystemDictionary;
 import com.danawa.search.analysis.dict.SystemDictionary.WordEntry;
 
+import org.apache.lucene.analysis.ko.util.DictionaryBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -27,25 +32,18 @@ public class DictionaryTest {
         logger.debug("init");
     }
 
-    @Test public void simpleDictionaryTest() throws Exception {
+    @Test
+    public void simpleDictionaryTest() throws Exception {
         logger.debug("START.");
         List<WordEntry> entries = new ArrayList<>();
 
         String[] words = { "대한", "민국", "세종", "대왕" };
-        int [] costs = {
-            SystemDictionary.DEFAULT_WORD_COST_HIGH,
-            SystemDictionary.DEFAULT_WORD_COST_MID,
-            SystemDictionary.DEFAULT_WORD_COST_LOW,
-            SystemDictionary.DEFAULT_WORD_COST_HIGH,
-        };
+        int[] costs = { SystemDictionary.DEFAULT_WORD_COST_HIGH, SystemDictionary.DEFAULT_WORD_COST_MID,
+                SystemDictionary.DEFAULT_WORD_COST_LOW, SystemDictionary.DEFAULT_WORD_COST_HIGH, };
 
-        entries.addAll(Arrays.asList(
-            new WordEntry[] {
-                new WordEntry(words[0], costs[0]),
-                new WordEntry(words[1], costs[1]),
-                new WordEntry(words[2], costs[2]),
-                new WordEntry(words[3], costs[3]) 
-        }));
+        entries.addAll(
+                Arrays.asList(new WordEntry[] { new WordEntry(words[0], costs[0]), new WordEntry(words[1], costs[1]),
+                        new WordEntry(words[2], costs[2]), new WordEntry(words[3], costs[3]) }));
 
         SystemDictionary dict = new SystemDictionary(entries);
         assertTrue(dict.contains("대왕") != -1);
@@ -59,8 +57,9 @@ public class DictionaryTest {
             assertEquals(costs[inx], dict.getWordCost(wordId));
         }
     }
-    
-    @Test public void performanceTest() throws Exception {
+
+    @Test
+    public void performanceTest() throws Exception {
         String userDictFile = "C:/Temp/dict_user.txt";
         File file = new File(userDictFile);
         // 빌드시 자동 테스트 수행을 막는다
@@ -120,7 +119,7 @@ public class DictionaryTest {
         List<WordEntry> wordList = new ArrayList<>();
         SystemDictionary dictSet = null;
         int cntWord = 0;
-        
+
         long freeMemory = Runtime.getRuntime().freeMemory();
 
         try {
@@ -131,23 +130,26 @@ public class DictionaryTest {
             dictSet = new SystemDictionary(wordList);
             cntWord = wordList.size();
         } finally {
-            try { reader.close(); } catch (Exception ignore) { }
+            try {
+                reader.close();
+            } catch (Exception ignore) {
+            }
         }
         freeMemory = freeMemory - Runtime.getRuntime().freeMemory();
 
-		int ntimes = 10000000;
-		Random r = new Random();
-		
-		long timeTotal = 0;
-		long timePrev = 0;
-		long timeNext = 0;
-		int found = 0;
-		int tries = 20;
-		
-		int chStart = '가';
+        int ntimes = 10000000;
+        Random r = new Random();
+
+        long timeTotal = 0;
+        long timePrev = 0;
+        long timeNext = 0;
+        int found = 0;
+        int tries = 20;
+
+        int chStart = '가';
         int chLimit = '힣' - chStart;
         CharSequence cv = null;
-        
+
         try {
             for (int test = 0; test < tries; test++) {
                 timeTotal = 0;
@@ -173,18 +175,83 @@ public class DictionaryTest {
                         found++;
                     }
                 }
-                logger.debug("TOTAL {} TIMES IN {} NANOSECOND / SIZE:{} / FOUND:{}", ntimes, timeTotal, wordList.size(), found);
+                logger.debug("TOTAL {} TIMES IN {} NANOSECOND / SIZE:{} / FOUND:{}", ntimes, timeTotal, wordList.size(),
+                        found);
             }
         } catch (Exception e) {
             logger.error("", e);
         }
         logger.debug("ALLOCATED-MEMORY:{}", freeMemory);
-		logger.debug("--------------------------------------------------------------------------------");
+        logger.debug("--------------------------------------------------------------------------------");
+        assertTrue(true);
+    }
+
+    @Test
+    public void createDictionaryTest() {
+        String encoding = "UTF-8";
+        boolean normalizeEntry = true;
+        File inputDir = null;
+        File outputDir = null;
+        Writer writer = null;
+        FileFilter deleteFilter = new DeleteFileFilter();
+        try {
+            inputDir = createTmpDir();
+            outputDir = createTmpDir();
+            writer = new FileWriter(new File(inputDir, "noun.csv"));
+            writer.write("한국어,0,0,0,NNG,,,,*,*,*,0");
+            writer.close();
+
+            writer = new FileWriter(new File(inputDir, "unk.def"));
+            writer.write("DEFAULT,1801,3566,3640,SY,*,*,*,*,*,*,*");
+            writer.close();
+
+            writer = new FileWriter(new File(inputDir, "char.def"));
+            writer.write("0x0041..0x005A ALPHA");
+            writer.close();
+
+            writer = new FileWriter(new File(inputDir, "matrix.def"));
+            writer.write("1 1\n0 0 0");
+            writer.close();
+
+            DictionaryBuilder.build(inputDir.toPath(), outputDir.toPath(), encoding, normalizeEntry);
+        } catch (IOException e) {
+            logger.error("", e);
+        } finally {
+            try { writer.close(); } catch (Exception ignore) { }
+            try { deleteDir(inputDir, deleteFilter); } catch (Exception ignore) { }
+            try { deleteDir(outputDir, deleteFilter); } catch (Exception ignore) { }
+        }
         assertTrue(true);
     }
 
     @Test
     public void preAnalysisDictionaryTest() throws Exception {
         assertTrue(true);
+    }
+
+    public static File createTmpDir() throws IOException {
+        File file = File.createTempFile("tmp_", "_dir");
+        file.delete();
+        file.mkdir();
+        return file;
+    }
+
+    public static class DeleteFileFilter implements FileFilter {
+        @Override public boolean accept(File file) {
+            if (file.isDirectory()) {
+                file.listFiles(this);
+            }
+            file.delete();
+            return false;
+        }
+    }
+
+    public static void deleteDir(File file, FileFilter filter) throws IOException {
+        if (file.exists()) {
+            if (file.isDirectory()) {
+                file.listFiles(filter);
+            }
+            file.delete();
+        }
     }
 }

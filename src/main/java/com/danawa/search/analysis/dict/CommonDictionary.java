@@ -69,6 +69,10 @@ public class CommonDictionary {
 	public void applyDictionary(Set<WordEntry> entries) throws IOException {
 		SystemDictionary.build(systemDictionary, entries);
 	}
+
+	public SystemDictionary getSystemDictionary() {
+		return systemDictionary;
+	}
 	
 	@Override
 	public String toString() {

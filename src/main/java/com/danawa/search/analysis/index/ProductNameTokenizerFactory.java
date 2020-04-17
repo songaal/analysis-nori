@@ -101,7 +101,7 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
                 false, discardPunctuation);
     }
 
-    private File getDictionaryFile(Properties prop, Environment env, String dictionaryId) {
+    private static File getDictionaryFile(Properties prop, Environment env, String dictionaryId) {
         File ret = null;
         //속성에서 발견되면 속성내부 경로를 사용해 파일을 얻어오며, 그렇지 않은경우 지정된 경로에서 사전파일을 얻어온다
         String attribute = prop.getProperty(ATTR_DICTIONARY_FILE_PATH + "." + dictionaryId).trim();
@@ -112,7 +112,7 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
         return ret;
     }
 
-    private Type getType(Properties prop, String dictionaryId) {
+    private static Type getType(Properties prop, String dictionaryId) {
         Type ret = null;
         String attribute = prop.getProperty(ATTR_DICTIONARY_TYPE + "." + dictionaryId).trim();
         for (Type type : Type.values()) {
@@ -124,7 +124,7 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
         return ret;
     }
 
-    private TokenType getTokenType(Properties prop, String dictionaryId) {
+    private static TokenType getTokenType(Properties prop, String dictionaryId) {
         TokenType ret = null;
         String attribute = prop.getProperty(ATTR_DICTIONARY_TOKEN_TYPE + "." + dictionaryId).trim();
         for (TokenType tokenType : TokenType.values()) {
@@ -136,7 +136,7 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
         return ret;
     }
 
-    private int getCost(TokenType tokenType) {
+    private static int getCost(TokenType tokenType) {
         int ret = SystemDictionary.DEFAULT_WORD_COST_LOW;
         if (tokenType == TokenType.HIGH) {
             ret = SystemDictionary.DEFAULT_WORD_COST_HIGH;
@@ -146,7 +146,20 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
         return ret;
     }
 
-    protected CommonDictionary loadDictionary(Environment env, Settings settings) {
+    public static CommonDictionary loadDictionary(Environment env) {
+        Properties dictProp = new Properties();
+        Reader reader = null;
+        try {
+            reader = new FileReader(new File(env.configFile().toFile(), ANALYSIS_PROP));
+            dictProp.load(reader);
+        } catch (IOException e) {
+        } finally {
+            try { reader.close(); } catch (Exception ignore) { }
+        }
+        return loadDictionary(env, dictProp);
+    }
+
+    public static CommonDictionary loadDictionary(Environment env, Properties dictProp) {
         /**
          * 기본셋팅. 
          * ${ELASTICSEARCH}/config/product_name_analysis.prop 파일을 사용하도록 한다
@@ -158,92 +171,86 @@ public class ProductNameTokenizerFactory extends AbstractTokenizerFactory {
 		SystemDictionary dictionary = null;
 		CommonDictionary commonDictionary = null;
         List<String> idList = new ArrayList<>();
-        Properties dictProp = new Properties();
-        Reader reader = null;
-        try {
-            reader = new FileReader(new File(env.configFile().toFile(), ANALYSIS_PROP));
-            dictProp.load(reader);
-            String idStr = dictProp.getProperty(ATTR_DICTIONARY_ID_LIST);
-            if (idStr != null) {
-                for (String id : idStr.split("[,]")) { idList.add(id.trim()); }
-            }
-        } catch (IOException e) {
-        } finally {
-            try { reader.close(); } catch (Exception ignore) { }
+
+        String idStr = dictProp.getProperty(ATTR_DICTIONARY_ID_LIST);
+        if (idStr != null) {
+            for (String id : idStr.split("[,]")) { idList.add(id.trim()); }
         }
 		
-		if (idList != null) {
-
-            dictionary = new SystemDictionary();
-			commonDictionary = new CommonDictionary(dictionary);
-			
-            Set<WordEntry> entries = null;
-            for (String dictionaryId : idList) {
-                Type type = getType(dictProp, dictionaryId);
-                TokenType tokenType = getTokenType(dictProp, dictionaryId);
-                File dictFile = getDictionaryFile(dictProp, env, dictionaryId);
-                SourceDictionary<?> sourceDictionary = null;
-				
-                if (type == Type.SET) {
-					SetDictionary setDictionary = new SetDictionary(dictFile);
-					if(tokenType != null){
-						entries = commonDictionary.appendDictionary(setDictionary.set(), getCost(tokenType), entries);
-					}
-					sourceDictionary = setDictionary;
-                } else if (type == Type.MAP) {
-					MapDictionary mapDictionary = new MapDictionary(dictFile);
-					if(tokenType != null){
-						entries = commonDictionary.appendDictionary(mapDictionary.map().keySet(), getCost(tokenType), entries);
-					}
-					sourceDictionary = mapDictionary;
-                } else if (type == Type.SYNONYM || type == Type.SYNONYM_2WAY) {
-					SynonymDictionary synonymDictionary = new SynonymDictionary(dictFile);
-					if(tokenType != null){
-						entries = commonDictionary.appendDictionary(synonymDictionary.getWordSet(), getCost(tokenType), entries);
-					}
-					sourceDictionary = synonymDictionary;
-                } else if (type == Type.SPACE) {
-					SpaceDictionary spaceDictionary = new SpaceDictionary(dictFile);
-					if(tokenType != null){
-						entries = commonDictionary.appendDictionary(spaceDictionary.map().keySet(), getCost(tokenType), entries);
-					}
-                    sourceDictionary = spaceDictionary;
-					// Map map = new HashMap<CharSequence, PreResult<CharSequence>>();
-					// for(Entry<CharSequence, CharSequence[]> e : spaceDictionary.map().entrySet()){
-					// 	PreResult preResult = new PreResult<T>();
-					// 	preResult.setResult(e.getValue());
-					// 	map.put(e.getKey(), preResult);
-					// }
-					// commonDictionary.setPreDictionary(map);
-                } else if (type == Type.CUSTOM) {
-					CustomDictionary customDictionary = new CustomDictionary(dictFile);
-					if(tokenType != null){
-						entries = commonDictionary.appendDictionary(customDictionary.getWordSet(), getCost(tokenType), entries);
-					}
-					sourceDictionary = customDictionary;
-                } else if (type == Type.INVERT_MAP) {
-                    InvertMapDictionary invertMapDictionary = new InvertMapDictionary(dictFile);
-                    if(tokenType != null){
-						entries = commonDictionary.appendDictionary(invertMapDictionary.map().keySet(), getCost(tokenType), entries);
-                    }
-                    sourceDictionary = invertMapDictionary;
-                } else if (type == Type.COMPOUND) {
-					CompoundDictionary compoundDictionary = new CompoundDictionary(dictFile);
-					if(tokenType != null){
-						entries = commonDictionary.appendDictionary(compoundDictionary.map().keySet(), getCost(tokenType), entries);
-					}
-					sourceDictionary = compoundDictionary;
-                } else if (type == Type.SYSTEM) {
-					//ignore
-                } else {
-                    logger.error("Unknown Dictionary type > {}", type);
-				}
-                logger.info("Dictionary {} is loaded. tokenType[{}] ", dictionaryId, tokenType);
-				//add dictionary
-                if (sourceDictionary != null) {
-				 	commonDictionary.addDictionary(dictionaryId, sourceDictionary);
-				}
+        dictionary = new SystemDictionary();
+        commonDictionary = new CommonDictionary(dictionary);
+        
+        Set<WordEntry> entries = null;
+        for (String dictionaryId : idList) {
+            Type type = getType(dictProp, dictionaryId);
+            TokenType tokenType = getTokenType(dictProp, dictionaryId);
+            File dictFile = getDictionaryFile(dictProp, env, dictionaryId);
+            SourceDictionary<?> sourceDictionary = null;
+            
+            if (type == Type.SET) {
+                SetDictionary setDictionary = new SetDictionary(dictFile);
+                if(tokenType != null){
+                    entries = commonDictionary.appendDictionary(setDictionary.set(), getCost(tokenType), entries);
+                }
+                sourceDictionary = setDictionary;
+            } else if (type == Type.MAP) {
+                MapDictionary mapDictionary = new MapDictionary(dictFile);
+                if(tokenType != null){
+                    entries = commonDictionary.appendDictionary(mapDictionary.map().keySet(), getCost(tokenType), entries);
+                }
+                sourceDictionary = mapDictionary;
+            } else if (type == Type.SYNONYM || type == Type.SYNONYM_2WAY) {
+                SynonymDictionary synonymDictionary = new SynonymDictionary(dictFile);
+                if(tokenType != null){
+                    entries = commonDictionary.appendDictionary(synonymDictionary.getWordSet(), getCost(tokenType), entries);
+                }
+                sourceDictionary = synonymDictionary;
+            } else if (type == Type.SPACE) {
+                SpaceDictionary spaceDictionary = new SpaceDictionary(dictFile);
+                if(tokenType != null){
+                    entries = commonDictionary.appendDictionary(spaceDictionary.map().keySet(), getCost(tokenType), entries);
+                }
+                sourceDictionary = spaceDictionary;
+                // Map map = new HashMap<CharSequence, PreResult<CharSequence>>();
+                // for(Entry<CharSequence, CharSequence[]> e : spaceDictionary.map().entrySet()){
+                // 	PreResult preResult = new PreResult<T>();
+                // 	preResult.setResult(e.getValue());
+                // 	map.put(e.getKey(), preResult);
+                // }
+                // commonDictionary.setPreDictionary(map);
+            } else if (type == Type.CUSTOM) {
+                CustomDictionary customDictionary = new CustomDictionary(dictFile);
+                if(tokenType != null){
+                    entries = commonDictionary.appendDictionary(customDictionary.getWordSet(), getCost(tokenType), entries);
+                }
+                sourceDictionary = customDictionary;
+            } else if (type == Type.INVERT_MAP) {
+                InvertMapDictionary invertMapDictionary = new InvertMapDictionary(dictFile);
+                if(tokenType != null){
+                    entries = commonDictionary.appendDictionary(invertMapDictionary.map().keySet(), getCost(tokenType), entries);
+                }
+                sourceDictionary = invertMapDictionary;
+            } else if (type == Type.COMPOUND) {
+                CompoundDictionary compoundDictionary = new CompoundDictionary(dictFile);
+                if(tokenType != null){
+                    entries = commonDictionary.appendDictionary(compoundDictionary.map().keySet(), getCost(tokenType), entries);
+                }
+                sourceDictionary = compoundDictionary;
+            } else if (type == Type.SYSTEM) {
+                //ignore
+            } else {
+                logger.error("Unknown Dictionary type > {}", type);
             }
+            logger.info("Dictionary {} is loaded. tokenType[{}] ", dictionaryId, tokenType);
+            //add dictionary
+            if (sourceDictionary != null) {
+                commonDictionary.addDictionary(dictionaryId, sourceDictionary);
+            }
+        }
+        try {
+            commonDictionary.applyDictionary(entries);
+        } catch (IOException e) {
+            logger.error("", e);
         }
 		return commonDictionary;
 	}
