@@ -61,9 +61,10 @@ public class DictionaryTest {
     @Test
     public void performanceTest() throws Exception {
         String userDictFile = System.getProperty("PROP_TEST_USER_DICT_TXT");
-        File file = new File(userDictFile);
+        File file = null;
+        if (userDictFile != null) { file = new File(userDictFile); }
         // 빌드시 자동 테스트 수행을 막는다
-        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !file.exists()) {
+        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !(file!=null && file.exists())) {
             return;
         }
         // CharVector - SetDictionary in fastcatsearch performance log

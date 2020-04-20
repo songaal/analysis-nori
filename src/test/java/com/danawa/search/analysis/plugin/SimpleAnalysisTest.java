@@ -1,5 +1,6 @@
 package com.danawa.search.analysis.plugin;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.Reader;
@@ -156,9 +157,10 @@ public class SimpleAnalysisTest {
     @Test
     public void testDictionaryLoadedTokenizer() throws Exception {
         Properties prop = new Properties(0);
-        File propFile = new File(System.getProperty("PROP_TEST_DICTIONARY_SETTING"));
+        File propFile = null;
+        try { propFile = new File(System.getProperty("PROP_TEST_DICTIONARY_SETTING")); } catch (Exception ignore) { }
         // 빌드시 자동 테스트 수행을 막는다
-        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !propFile.exists()) {
+        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !(propFile != null && propFile.exists())) {
             return;
         }
         {
@@ -231,6 +233,121 @@ public class SimpleAnalysisTest {
         } finally {
             stream.close();
             analyzer.close();
+        }
+        assertTrue(true);
+    }
+
+    @Test
+    public void testDictionaryLoadedTokenizerPerformance () throws Exception {
+        // --------------------------------------------------------------------------------
+        // FASTCAT 기반 퍼포먼스 테스트 (FOR-DOCUMENT / RULE 제거)
+        // TOTAL ANALYZED COUNT 5000 / MIN:0.033ms / MAX:21.879ms / TOTAL:601.486ms / AVERAGE:0.12ms
+        // TOTAL ANALYZED COUNT 10000 / MIN:0.019ms / MAX:9.049ms / TOTAL:387.167ms / AVERAGE:0.038ms
+        // TOTAL ANALYZED COUNT 15000 / MIN:0.02ms / MAX:7.97ms / TOTAL:273.98ms / AVERAGE:0.018ms
+        // TOTAL ANALYZED COUNT 20000 / MIN:0.016ms / MAX:5.145ms / TOTAL:251.973ms / AVERAGE:0.012ms
+        // TOTAL ANALYZED COUNT 25000 / MIN:0.016ms / MAX:5.708ms / TOTAL:233.635ms / AVERAGE:0.009ms
+        // TOTAL ANALYZED COUNT 30000 / MIN:0.016ms / MAX:5.343ms / TOTAL:240.181ms / AVERAGE:0.008ms
+        // TOTAL ANALYZED COUNT 35000 / MIN:0.016ms / MAX:5.408ms / TOTAL:245.383ms / AVERAGE:0.007ms
+        // TOTAL ANALYZED COUNT 40000 / MIN:0.016ms / MAX:5.557ms / TOTAL:235.818ms / AVERAGE:0.005ms
+        // TOTAL ANALYZED COUNT 45000 / MIN:0.017ms / MAX:5.522ms / TOTAL:238.599ms / AVERAGE:0.005ms
+        // TOTAL ANALYZED COUNT 50000 / MIN:0.017ms / MAX:5.048ms / TOTAL:245.416ms / AVERAGE:0.004ms
+        // --------------------------------------------------------------------------------
+        // 노리 기반 퍼포먼스 테스트
+        // TOTAL ANALYZED COUNT 5000 / MIN:0.293ms / MAX:362.722ms / TOTAL:6114.84ms / AVERAGE:1.222ms
+        // TOTAL ANALYZED COUNT 10000 / MIN:0.347ms / MAX:4.973ms / TOTAL:5750.179ms / AVERAGE:0.575ms
+        // TOTAL ANALYZED COUNT 15000 / MIN:0.314ms / MAX:6.3ms / TOTAL:5564.782ms / AVERAGE:0.37ms
+        // TOTAL ANALYZED COUNT 20000 / MIN:0.349ms / MAX:5.302ms / TOTAL:5696.846ms / AVERAGE:0.284ms
+        // TOTAL ANALYZED COUNT 25000 / MIN:0.338ms / MAX:5.711ms / TOTAL:5575.568ms / AVERAGE:0.223ms
+        // TOTAL ANALYZED COUNT 30000 / MIN:0.353ms / MAX:5.855ms / TOTAL:5924.865ms / AVERAGE:0.197ms
+        // TOTAL ANALYZED COUNT 35000 / MIN:0.275ms / MAX:5.894ms / TOTAL:5749.822ms / AVERAGE:0.164ms
+        // TOTAL ANALYZED COUNT 40000 / MIN:0.307ms / MAX:5.5ms / TOTAL:5750.924ms / AVERAGE:0.143ms
+        // TOTAL ANALYZED COUNT 45000 / MIN:0.362ms / MAX:5.825ms / TOTAL:5820.408ms / AVERAGE:0.129ms
+        // TOTAL ANALYZED COUNT 50000 / MIN:0.303ms / MAX:4.885ms / TOTAL:5917.584ms / AVERAGE:0.118ms
+        // --------------------------------------------------------------------------------
+        Properties prop = new Properties(0);
+        File propFile = null;
+        File testTextFile = null;
+        BufferedReader reader = null;
+        try { propFile = new File(System.getProperty("PROP_TEST_DICTIONARY_SETTING")); } catch (Exception ignore) { }
+        try { testTextFile = new File(System.getProperty("PROP_TEST_TEXT_DATA")); } catch (Exception ignore) { }
+        // 빌드시 자동 테스트 수행을 막는다
+        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !(propFile != null && propFile.exists()) || 
+            !(testTextFile != null && testTextFile.exists())) {
+            return;
+        }
+        try {
+            reader = new BufferedReader(new FileReader(propFile));
+            prop.load(reader);
+        } finally {
+            try { reader.close(); } catch (Exception ignore) { }
+        }
+        CommonDictionary commonDictionary = ProductNameTokenizerFactory.loadDictionary(null, prop);
+        SystemDictionary userDictionary = commonDictionary.getSystemDictionary();
+        DecompoundMode decompoundMode = DecompoundMode.NONE;
+        Set<Tag> stopTags = null;
+        {
+            stopTags = new HashSet<Tag>();
+            for (String tagStr : STOP_TAG_STR.split("[,]")) {
+                stopTags.add(POS.resolveTag(tagStr));
+            }
+            if (stopTags.size() == 0) {
+                stopTags = null;
+            }
+        }
+        Analyzer analyzer = null;
+        TokenStream stream = null;
+        double nanoTime = 0;
+        double totalTime = 0;
+        double minTime = Double.MAX_VALUE;
+        double maxTime = Double.MIN_VALUE;
+        StringBuilder sb = new StringBuilder();
+        long count = 0;
+        try {
+            reader = new BufferedReader(new FileReader(testTextFile));
+            for (String text; (text = reader.readLine()) != null;) {
+                count++;
+                nanoTime = System.nanoTime();
+                Reader input = new StringReader(text);
+                analyzer = new ProductNameAnalyzer(userDictionary, decompoundMode, stopTags, false, false);
+                stream = analyzer.tokenStream("", input);
+                stream.reset();
+                stream.clearAttributes();
+                CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+
+                sb.setLength(0);
+                while (stream.incrementToken()) {
+                    sb.append(termAtt).append(" ");
+                }
+                nanoTime = System.nanoTime() - nanoTime;
+                nanoTime = (double) nanoTime / 1000000D;
+                if (nanoTime < minTime) { minTime = nanoTime; }
+                if (nanoTime > maxTime) { maxTime = nanoTime; }
+                totalTime += nanoTime;
+
+                logger.trace("ANALYZED TAKES {}ms : \"{}\" -> \"{}\"", 
+                    (double)((long) (nanoTime * 1000)) / 1000D , text, sb);
+
+                if (count % 5000 == 0) {
+                    logger.debug("TOTAL ANALYZED COUNT {} / MIN:{}ms / MAX:{}ms / TOTAL:{}ms / AVERAGE:{}ms", count, 
+                        (double)((long) (minTime * 1000)) / 1000D,
+                        (double)((long) (maxTime * 1000)) / 1000D,
+                        (double)((long) (totalTime * 1000)) / 1000D,
+                        (double)((long) (totalTime * 1000 / count)) / 1000D);
+                    totalTime = 0;
+                    minTime = Double.MAX_VALUE;
+                    maxTime = Double.MIN_VALUE;
+
+                }
+                if (count > 50000) { break; }
+            }
+            stream.close();
+            analyzer.close();
+        } catch (Exception e) {
+            logger.error("", e);
+        } finally {
+            try { reader.close(); } catch (Exception ignore) { }
+            try { stream.close(); } catch (Exception ignore) { }
+            try { analyzer.close(); } catch (Exception ignore) { }
         }
         assertTrue(true);
     }
