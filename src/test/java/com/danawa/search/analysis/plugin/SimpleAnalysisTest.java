@@ -239,6 +239,48 @@ public class SimpleAnalysisTest {
 
     @Test
     public void testDictionaryLoadedTokenizerPerformance () throws Exception {
+        /**
+		 * 테스트방법 : 테스트 실행시 파라메터셋팅 필요
+		 * -DPROP_TEST_MASSIVE_DATA=Y
+         * -DPROP_TEST_TEXT_DATA=C:/..../data.txt"
+		 * -DPROP_TEST_DICTIONARY_SETTING=C:/..../product_name_analysis.prop
+         * 
+         * DICTIONARY_SETTING 형식은 다음과 같다
+         * analysis.product.dictionary.list=user,synonym,stop,space,compound,unit,unit_synonym,maker,brand,category,english
+         * analysis.product.dictionary.type.user=SET
+         * analysis.product.dictionary.tokenType.user=MAX
+         * analysis.product.dictionary.filePath.user=C:/..../Product/dict/user.dict
+         * analysis.product.dictionary.type.synonym=SYNONYM
+         * analysis.product.dictionary.tokenType.synonym=NONE
+         * analysis.product.dictionary.filePath.synonym=C:/..../Product/dict/synonym.dict
+         * analysis.product.dictionary.type.stop=SET
+         * analysis.product.dictionary.tokenType.stop=MAX
+         * analysis.product.dictionary.filePath.stop=C:/..../Product/dict/stop.dict
+         * analysis.product.dictionary.type.space=SPACE
+         * analysis.product.dictionary.tokenType.space=MIN
+         * analysis.product.dictionary.filePath.space=C:/..../Product/dict/space.dict
+         * analysis.product.dictionary.type.compound=COMPOUND
+         * analysis.product.dictionary.tokenType.compound=MID
+         * analysis.product.dictionary.filePath.compound=C:/..../Product/dict/compound.dict
+         * analysis.product.dictionary.type.unit=SET
+         * analysis.product.dictionary.tokenType.unit=HIGH
+         * analysis.product.dictionary.filePath.unit=C:/..../Product/dict/unit.dict
+         * analysis.product.dictionary.type.unit_synonym=SYNONYM_2WAY
+         * analysis.product.dictionary.tokenType.unit_synonym=HIGH
+         * analysis.product.dictionary.filePath.unit_synonym=C:/..../Product/dict/unit_synonym.dict
+         * analysis.product.dictionary.type.maker=CUSTOM
+         * analysis.product.dictionary.tokenType.maker=NONE
+         * analysis.product.dictionary.filePath.maker=C:/..../Product/dict/maker.dict
+         * analysis.product.dictionary.type.brand=CUSTOM
+         * analysis.product.dictionary.tokenType.brand=NONE
+         * analysis.product.dictionary.filePath.brand=C:/..../Product/dict/brand.dict
+         * analysis.product.dictionary.type.category=CUSTOM
+         * analysis.product.dictionary.tokenType.category=NONE
+         * analysis.product.dictionary.filePath.category=C:/..../Product/dict/category.dict
+         * analysis.product.dictionary.type.english=SET
+         * analysis.product.dictionary.tokenType.english=MAX
+         * analysis.product.dictionary.filePath.english=C:/..../Product/dict/english.dict
+		 */
         // --------------------------------------------------------------------------------
         // FASTCAT 기반 퍼포먼스 테스트 (FOR-DOCUMENT / RULE 제거)
         // TOTAL ANALYZED COUNT 5000 / MIN:0.033ms / MAX:21.879ms / TOTAL:601.486ms / AVERAGE:0.12ms

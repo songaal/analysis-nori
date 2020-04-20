@@ -60,13 +60,11 @@ public class DictionaryTest {
 
     @Test
     public void performanceTest() throws Exception {
-        String userDictFile = System.getProperty("PROP_TEST_USER_DICT_TXT");
-        File file = null;
-        if (userDictFile != null) { file = new File(userDictFile); }
-        // 빌드시 자동 테스트 수행을 막는다
-        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !(file!=null && file.exists())) {
-            return;
-        }
+        /**
+		 * 테스트방법 : 테스트 실행시 파라메터셋팅 필요
+		 * -DPROP_TEST_MASSIVE_DATA=Y
+		 * -DPROP_TEST_DICTIONARY_SETTING=C:/..../product_name_analysis.prop
+		 */
         // CharVector - SetDictionary in fastcatsearch performance log
         // TOTAL 10000000 TIMES IN 670177400 NANOSECOND / SIZE:32641 / FOUND:5004093
         // TOTAL 10000000 TIMES IN 691420400 NANOSECOND / SIZE:32641 / FOUND:5002853
@@ -115,6 +113,13 @@ public class DictionaryTest {
         // --------------------------------------------------------------------------------
         // 결론 : FST 사전은 Set 기반 사전보다 느리므로 (약 3~4배) 규칙분류에서 사용하기 힘들다
         // 메모리도 약 2배 정도 더 사용한다
+        String userDictFile = System.getProperty("PROP_TEST_USER_DICT_TXT");
+        File file = null;
+        if (userDictFile != null) { file = new File(userDictFile); }
+        // 빌드시 자동 테스트 수행을 막는다
+        if (!"Y".equals(System.getProperty("PROP_TEST_MASSIVE_DATA")) || !(file!=null && file.exists())) {
+            return;
+        }
 
         BufferedReader reader = null;
         List<WordEntry> wordList = new ArrayList<>();
